@@ -1,0 +1,90 @@
+---
+title: "DS4420-Project-Bayes"
+author: "Eddy Liu"
+date: "2025-04-12"
+output: html_document
+---
+
+
+
+# load libs
+```{r}
+
+library(data.table)
+library(caret)
+library(mvnfast)
+library(geoR)
+library(MCMCpack)
+library(brms)
+
+```
+
+# load data
+```{r}
+
+mw <- read.csv("mbta_weather.csv")
+mw <- data.frame(scale(mw[,-1]))
+
+mbta_train <- mw[200:1000,-1]
+mbta_test  <- mw[seq(0,200),-1]
+mbta_train
+
+```
+
+# use brms
+```{r}
+
+# normally distributed weights
+prior <- default_prior(
+  delay ~ prec + temp,
+  data = mbta_train,
+  family = gaussian()
+)
+
+# define posterior
+mbta_brm <- brm(
+  delay ~ prec + temp,
+  data = mbta_train,
+  family = gaussian(),
+  prior = prior,
+  chains = 4,
+  iter = 10000,
+  warmup = 1800,
+  cores = 4,
+  file = "mbta_model_v4.rds"
+)
+```
+
+# check model confidence
+```{r}
+# check summary and R2
+summary(mbta_brm)
+
+# plot posterior histograms / traceplots
+plot(mbta_brm) 
+
+# bayes_R2
+bayes_R2(mbta_brm)
+```
+
+# perform predictions
+```{r}
+# get posterior predictions for test data 
+post_preds_test <- posterior_predict(
+  mbta_brm,
+  newdata = mbta_test,
+)
+
+# print col means
+predicted_delay <- colMeans(post_preds_test)
+predicted_delay
+```
+# get acc:
+```{r}
+
+cor(predicted_delay,mbta_test["delay"])
+
+```
+
+
+
