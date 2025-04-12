@@ -22,10 +22,12 @@ library(brms)
 # load data
 ```{r}
 
-mbta_train <- 0
-mbta_test  <- 0
+mw <- read.csv("mbta_weather.csv")
+mw <- data.frame(scale(mw[,-1]))
 
-
+mbta_train <- mw[200:1000,-1]
+mbta_test  <- mw[seq(0,200),-1]
+mbta_train
 
 ```
 
@@ -34,22 +36,22 @@ mbta_test  <- 0
 
 # normally distributed weights
 prior <- default_prior(
-  delay_m ~ weather + temperature,
+  delay ~ prec + temp,
   data = mbta_train,
   family = gaussian()
 )
 
 # define posterior
 mbta_brm <- brm(
-  delay_m ~ weather + temperature,
+  delay ~ prec + temp,
   data = mbta_train,
-  family = exponential(),
+  family = gaussian(),
   prior = prior,
   chains = 4,
   iter = 10000,
   warmup = 1800,
   cores = 4,
-  file = "mbta_model.rds"
+  file = "mbta_model_v4.rds"
 )
 ```
 
@@ -77,7 +79,12 @@ post_preds_test <- posterior_predict(
 predicted_delay <- colMeans(post_preds_test)
 predicted_delay
 ```
+# get acc:
+```{r}
 
+cor(predicted_delay,mbta_test["delay"])
+
+```
 
 
 
