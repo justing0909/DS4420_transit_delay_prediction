@@ -1,81 +1,6 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import sklearn.preprocessing
-import random
-import datetime
-
-
-np.random.seed(7654)
-
-
-weather = pd.read_csv("files/boston-weather.csv")
-weather["time"] = pd.to_datetime(weather["time"])
-
-ruggles_jan = pd.read_csv("files/ruggles2dtxg_0.csv")
-ruggles_jan["from_time"] = pd.to_datetime(ruggles_jan["from_time"]).dt.tz_localize(None)
-ruggles_jan["hour"] = ruggles_jan['from_time'].dt.round('H')
-
-# drop the 60-minute-delay outlier
-ruggles_jan = ruggles_jan[ruggles_jan["travel_time_sec"] < 3000]
-
-df = pd.merge(ruggles_jan,weather,left_on="hour",right_on="time")
-df.head()
-
-def df_scaler(df,cols):
-    df = df.copy(deep=True)
-    scaler = sklearn.preprocessing.StandardScaler()
-    df.loc[:,cols] = scaler.fit_transform(df[cols])
-    return df
-
-r2dwetcol = ["temperature_2m (°C)",
-             "wind_speed_10m (km/h)",
-             "precipitation (mm)",
-             "cloud_cover (%)",
-             "visibility (m)",]
-
-df = df_scaler(df,cols = r2dwetcol)
-
-# explicitly define x
-x = df[r2dwetcol].copy(deep=True)
-
-# add bias column to x
-x["bias"] = np.ones(x.shape[0])
-
-# convert x to numpy
-x = x.to_numpy()
-
-# explicitly define y
-y = df["travel_time_sec"].to_numpy()
-
-def tt_idx(y,train_percent:float):
-    y_len = len(y)
-    # get random non-repeating 
-    # values for unique indicies:
-    train_idx = random.sample(range(y_len),
-                              int(y_len*train_percent))
-    
-    # store train vs test in dict
-    tt_idx_dict = {
-        "train":list(filter(lambda x: 
-                            x in train_idx,
-                            range(y_len))),
-        "test": list(filter(lambda x: 
-                            x not in train_idx,
-                            range(y_len)))
-    }
-    
-    # return dict
-    return tt_idx_dict
-
-tt_idict  = tt_idx(y,0.7)
-train_idx = tt_idict["train"]
-test_idx  = tt_idict["test"]
-
-x_train = x[train_idx]
-y_train = y[train_idx]
-x_test  = x[test_idx]
-y_test  = y[test_idx]
 
 class AbstractAF:
     """Abstract Activation Function.
@@ -170,7 +95,81 @@ class MLP:
     def __init__(self,seed=None):
         np.random.seed(seed)
         self.layers  = []
-        self.weights = []
+        self.weights = [
+            np.array([[ 0.13876319,  0.22640905, -0.2853099 ,  0.21473718,  0.15649755,
+                        0.37585086, -0.32501255, -0.21397295, -0.01192419, -0.06718183,
+                        0.01381539,  0.3829614 , -0.10261642, -0.18769519,  0.41081833,
+                        -0.11705712,  0.1943435 , -0.37700067, -0.18396392, -0.40779517],
+                        [ 0.10782415, -0.40525728,  0.0371851 ,  0.25192093, -0.15933668,
+                        -0.22124293,  0.09782554,  0.39318228,  0.15874965, -0.1396638 ,
+                        0.05661196,  0.44283865,  0.57519204, -0.35586828,  0.13351117,
+                        0.06998226,  0.03503674, -0.54733498,  0.27167423, -0.11141699],
+                        [ 0.63085993,  0.51946617, -0.2434313 ,  0.38954271,  0.07995638,
+                            0.3476454 , -0.01709522,  0.6481928 ,  0.04939612,  0.4584661 ,
+                            0.30407065,  0.39810144,  0.78771624, -0.2712758 ,  0.21225954,
+                            0.58786751,  0.49476035, -0.09897648,  0.15936382,  0.39840242],
+                        [ 0.48122506,  0.06890104,  0.78864858,  0.2338569 ,  0.57983993,
+                            0.17018448,  0.49465241,  0.20026509,  0.25541868, -0.16190038,
+                            0.19786829,  0.32276974,  0.3037967 ,  0.17278417,  0.37048908,
+                            -0.11726633,  0.12248824, -0.08559875,  0.69561037,  0.50400982],
+                        [-0.29249275,  0.10787834,  0.21775779, -0.18387509,  0.01344881,
+                            -0.0206688 ,  0.51669386,  0.0415605 ,  0.56729631, -0.34637565,
+                            -0.16237446, -0.39850441, -0.15616279,  0.07951577,  0.33800896,
+                            -0.10688913,  0.42562239,  0.21619812,  0.13054705, -0.3171269 ],
+                        [ 1.37523701,  1.81838566,  2.23628201,  1.9288745 ,  1.5030407 ,
+                            1.28030918,  1.54424284,  2.35802976,  1.05689198,  1.97343708,
+                            1.37011172,  2.04479809,  0.99747628,  2.40925681,  1.48475021,
+                            2.14802472,  1.51309035,  2.39484028,  1.46388871,  1.47566823]]),
+            np.array([[0.81575872, 0.78098074, 0.5713058 , 0.47660547, 0.63601814,
+                            0.12536821, 0.90368448, 1.02623056, 0.20240518, 0.35937266],
+                        [1.01565837, 0.26012786, 0.79631267, 0.47274152, 0.56843577,
+                            1.05910281, 0.27598803, 0.82487326, 0.94333111, 0.37049239],
+                        [0.31347593, 0.90033555, 1.02145695, 0.85670633, 1.09404761,
+                            0.97376051, 1.12566749, 0.32697099, 1.12046413, 0.85004479],
+                        [0.95591565, 0.91559007, 1.03161703, 0.57160382, 0.63477566,
+                            0.821484  , 0.419323  , 0.62012458, 0.40777653, 0.99242701],
+                        [0.92982766, 0.68124277, 0.62969887, 0.62228555, 0.503087  ,
+                            1.04932008, 0.69812598, 0.36633577, 0.08703464, 0.13448399],
+                        [0.68118702, 0.73531159, 0.62110877, 0.59169085, 0.96604779,
+                            0.18163253, 0.12328816, 0.80501911, 0.4709547 , 0.95258051],
+                        [0.80363419, 0.85096071, 0.70966519, 0.45811772, 0.74706579,
+                            0.43665567, 0.67882086, 0.99824616, 0.33713184, 0.68945864],
+                        [1.17976651, 0.54703092, 0.93012948, 0.52342921, 0.93021613,
+                            1.12958236, 0.33222549, 1.13887426, 0.39451488, 0.25291673],
+                        [0.91631221, 0.60158757, 0.4642562 , 0.20244916, 0.26014106,
+                            0.54043355, 0.51670869, 0.26155518, 0.87553303, 0.37423621],
+                        [0.94351464, 1.02882863, 0.88716365, 0.72079608, 0.41052383,
+                            0.84466855, 0.99655714, 0.72064799, 0.83285145, 0.92958348],
+                        [0.6178925 , 0.80548309, 0.5036223 , 0.89914767, 0.93457715,
+                            0.7902878 , 0.40106725, 0.49179855, 1.0397315 , 0.07286859],
+                        [0.51563558, 0.49993551, 0.57451453, 1.03775901, 0.24459861,
+                            0.7814895 , 1.06803723, 1.03371611, 1.05336331, 0.37510127],
+                        [0.99927267, 0.22603923, 0.38648731, 0.11680275, 0.60997321,
+                            0.02661729, 0.10232599, 0.39835013, 0.77546679, 0.11187975],
+                        [0.80508099, 0.82789822, 0.9139958 , 1.00151805, 0.74423743,
+                            0.43024171, 1.17714617, 1.17071931, 0.74057901, 0.41662449],
+                        [0.8661741 , 0.52155446, 0.98001828, 0.09927612, 0.73295715,
+                            0.21281478, 0.34153784, 0.28717377, 0.95295181, 0.37815173],
+                        [0.52185779, 0.94053123, 0.70929054, 0.55481425, 0.52702233,
+                            0.98796436, 0.74734306, 0.82777455, 0.49343762, 0.14493528],
+                        [0.23332507, 0.28444276, 0.75068527, 0.13578676, 0.50505335,
+                            0.8457517 , 0.21280329, 0.42885102, 0.75565157, 0.38166656],
+                        [1.12434282, 0.48839608, 1.33441102, 1.29295864, 0.71665596,
+                            1.15030331, 1.17031254, 0.85608096, 0.42598152, 1.11133456],
+                        [0.70242401, 0.27458019, 0.42551802, 0.80228575, 0.35478402,
+                            0.30055115, 0.61780083, 0.3394756 , 0.16897147, 0.57782876],
+                        [0.73906758, 0.95337549, 0.91401924, 0.96698846, 0.59424507,
+                            0.89418329, 1.06394299, 0.28971739, 0.35013688, 0.53549198]]),
+            np.array([[1.91845893],
+                        [2.15922958],
+                        [2.54854009],
+                        [2.02603634],
+                        [2.02847951],
+                        [2.01256605],
+                        [2.31830547],
+                        [2.20053168],
+                        [1.52545768],
+                        [1.13347019]])]
         self.loss = MeanSquaredErrorAF()
 
     def add_layer(self,nodes:int,afunc:AbstractAF) -> None:
@@ -178,56 +177,7 @@ class MLP:
         and a given Abstract Function"""
         self.layers.append(MLPLayer(nodes,afunc))
 
-    def _init_weights(self) -> None:
-        """Initialize weights based on added layers"""
-        assert len(self.layers) > 2, "layers must be added"
-
-        # reset weights matrix
-        self.weights = []
-
-        # get the shape based on existing layers
-        for i in range(1,len(self.layers)):
-            w = np.random.rand(self.layers[i-1].get_nodes(),
-                       self.layers[i  ].get_nodes())
-            self.weights.append(w)
-
     def fw(self,x:np.array):
-        """Performs a forward pass from
-        x through n hidden layers to f_w(x)
-        by applying an activation function 
-        for each layer in the MLP.
-
-        The function also initializes weight
-        dimensions, if not done so already.
-
-        Given the input example:
-        x_ample = np.ones((3,n))
-        
-        each column would represent a sample
-        ie: 
-        > x_ample[:,0]   would be the 1st sample
-        > x_ample[:,1]   would be the 2nd sample
-        > x_ample[:,n-1] would be the nth sample
-        etc.
-        
-        each row would represent a variable
-        ie:
-        > x_ample[0,:] would be the 1st parameter
-        > x_ample[1,:] would be the 2nd parameter
-        > x_ample[2,:] would be the 3rd parameter
-        etc.
-
-        The output of this function will generally take the shape:
-        (m,n) where n is the number of columns in the input array
-        and m is the number of node is the final layer in this MLP.
-        In this case, we are predicting one value, how late the
-        MBTA will be, and therefore m will always be 1.
-        """
-
-        # init weights if not yet done
-        if len(self.weights) == 0:
-            self._init_weights()
-
         # initialize x as the hidden value
         # of layer 0 (the input layer)
         self.layers[0].h = x
@@ -237,106 +187,7 @@ class MLP:
             x = self.layers[i].fw(self.weights[i-1],x)
 
         # return x
-        return x
-    
-    def _bp_list_factors(self,ridx,debug:bool=False):
-        """Gets a list of factors to
-        generate the corresponding
-        weight matrix.
-        
-        ridx is the reversed index:
-        - 0 refers to the last element
-        - 1 refers to the 2nd to last element
-        etc.
-        """
-        reversed_weights = list(reversed(self.weights))
-        reversed_layers  = list(reversed(self.layers))
-
-        # store factors to prod later 
-        prod_factors = []
-
-        # loop through the layers add dh
-        for i in range(ridx):
-            if debug:
-                print(f"""iteration:[{i}]:\n
-                layer.h: {reversed_layers[i+1].h.shape}\n
-                weight : {reversed_weights[i].shape}\n
-                dotable: {...}\n
-                """)
-            
-            # print(f"{reversed_layers[i+1]}.bp_x(...); shape:{reversed_weights[i].shape}")
-            prod_factors.append(reversed_layers[i+1].bp_x(reversed_weights[i]))
-
-        # add dw
-        # print(f"{reversed_layers[ridx+1]}.bp_w(...); shape:{reversed_weights[ridx].shape}")
-        prod_factors.append(reversed_layers[ridx+1].bp_w(reversed_weights[ridx]))
-
-        # return factors
-        return prod_factors
-
-    def _bp_dot(self,bp_list,loss,debug:bool=False):
-        """bp_list is the list generated from _bp_list_factors()
-        loss is the VALUES of loss as a matrix
-        """
-        prod_dh = loss.copy()
-    
-        # ignore the last value b/c it's dw not dh
-        for i in range(len(bp_list) - 1):
-            # perform a cumulative dot product
-            # starting from back:
-            if debug:
-                print(f"""iteration:[{i}]:\n
-                bp_list: {bp_list[i].shape}\n
-                prod_dh: {prod_dh.shape}\n
-                dotable: {bp_list[i][1]==prod_dh.shape[0]}\n
-                """)
-                
-            try:
-                prod_dh = bp_list[i].dot(prod_dh)
-            except:
-                prod_dh = bp_list[i] * (prod_dh)
-            
-    
-        # dot dw with the prod_dh transpose
-        dldw = bp_list[-1].dot(prod_dh.T)
-        return dldw
-    
-    def gd(self,
-           x:np.array,
-           y:np.array,
-           eta:float=0.1,
-           iters:int=10,
-           debug:bool=False
-          ):
-        # list of errors?
-        ls_mse = []
-        
-        for i in range(iters):
-            # compute the fwd pass
-            fwp = self.fw(x)
-            # compute the loss
-            fwl = self.loss.fw(f=fwp,y=y)
-            bpl = self.loss.bp(f=fwp,y=y).reshape(1,-1)
-            for fidx in range(len(self.weights)):
-                ridx = len(self.weights) - fidx - 1
-                bpd = self._bp_dot(self._bp_list_factors(fidx),bpl,debug=debug)
-                    
-                if debug:
-                    print(f"shape match: {self.weights[ridx].shape == bpd.shape}")
-                    print(f"    self.weights[{ridx}]",self.weights[ridx].shape)
-                    print(f"    self._bp_dot[{ridx}]",bpd.shape)
-
-                if bpd.shape == self.weights[ridx].shape:
-                    # overwrite the weights if the shapes match:
-                    self.weights[ridx] = (self.weights[ridx] - eta * bpd)
-                else:
-                    # throw error otherwise
-                    raise Exception("invalid weight shape"+
-                                    f"expected{self.weights[ridx].shape}; got{bpd.shape}")
-            
-            ls_mse.append(fwl)
-        return ls_mse
-    
+        return x    
 
 
 class MLPLayer:
@@ -367,31 +218,3 @@ class MLPLayer:
 
     def bp_x(self,w:np.array):
         return self.afunc.bp_x(w=w,x=self.h)
-    
-
-mlp = MLP(102)
-mlp.add_layer(6,LinearAF()) # input x
-mlp.add_layer(40,LinearAF())
-mlp.add_layer(80,LinearAF())
-mlp.add_layer(1,ReluAF()) # prediction f_w(x)
-
-# run 1000 iters of gradient descent
-err = mlp.gd(x_train.T,
-             y_train.T,
-             eta=0.000000002,
-             iters=1_000)
-
-
-# plot the change in error over iterations
-plt.plot(err)
-plt.title("MSE of MLP vs Epochs")
-plt.xlabel("Epochs")
-plt.ylabel("MSE Loss Error")
-plt.show()
-
-
-y_pred = mlp.fw(x_train.T).astype(float)
-np.corrcoef(y_pred.flatten(),y_train.flatten())
-plt.hist(y_pred.astype(float).flatten())
-plt.hist(y_test.astype(float).flatten())
-
