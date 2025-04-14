@@ -24,4 +24,4 @@ def show():
             "visibility (m)": visibility,
         }
         prediction = predict_duration(input_data)
-        st.success(f"Predicted Travel Duration: {prediction:.2f} seconds")
+        st.success(f"Predicted Travel Duration: {prediction / 60:.3f} minutes")

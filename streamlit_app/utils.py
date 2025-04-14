@@ -14,10 +14,16 @@ def predict_duration(input_data):
     """
     # Initialize the MLP model
     model = MLP(seed=102)
-    model.add_layer(25, LinearAF())  # Input layer
+    model.add_layer(5, LinearAF())  # Input layer
     model.add_layer(40, LinearAF())  # Hidden layer 1
     model.add_layer(80, LinearAF())  # Hidden layer 2
     model.add_layer(1, ReluAF())  # Output layer
+
+
+    # add in default values from additional weather data
+
+
+
 
     # Convert input_data to a numpy array
     x = np.array(list(input_data.values())).reshape(-1, 1)
