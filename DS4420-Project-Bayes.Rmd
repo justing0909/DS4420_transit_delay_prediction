@@ -22,23 +22,22 @@ library(brms)
 # load data
 ```{r}
 
-mw <- read.csv("ruggles_to_dtxg_january_scaled.csv")
-scaled <- data.frame(scale(mw[,-c(1,2,3,4,5)]))
-scaled$travel_time <- mw$travel_time_sec
+mw <- read.csv("ruggles2dtxg_weather_scaled.csv")
+#scaled <- data.frame(scale(mw[,-c(1,2,3,4,5)]))
+#scaled$travel_time <- mw$travel_time_sec
 
 ## set seed for reproducability
 set.seed(102)
 
 # create partition indicies
-part <- createDataPartition(scaled[,3],
+part <- createDataPartition(mw[,2],
                             p=0.8, # (80% training 20% test)
                             list=FALSE # returned as a matrix
                             )
 
-
-mbta_train <- scaled[ part,]
-mbta_test  <- scaled[-part,]
-mbta_train
+mbta_train <- mw[ part,]
+mbta_test  <- mw[-part,]
+head(mbta_train)
 
 ```
 
@@ -47,22 +46,22 @@ mbta_train
 
 # normally distributed weights
 prior <- default_prior(
-  travel_time ~ temperature_2m...C. + wind_speed_10m..km.h. + cloud_cover.... + visibility..m.,
+  travel_time_sec ~ temperature_2m...C. + wind_speed_10m..km.h. + precipitation..mm. + visibility..m. + relative_humidity_2m....,
   data = mbta_train,
   family = gaussian()
 )
 
 # define posterior
 mbta_brm <- brm(
-  travel_time ~ temperature_2m...C. + wind_speed_10m..km.h. + cloud_cover.... + visibility..m.,
+  travel_time_sec ~ temperature_2m...C. + wind_speed_10m..km.h. + precipitation..mm. + visibility..m. + relative_humidity_2m....,
   data = mbta_train,
-  family = gaussian(),
+  family = shifted_lognormal(),
   prior = prior,
   chains = 4,
   iter = 10000,
   warmup = 1800,
-  cores = 4,
-  file = "mbta_model_v5.rds"
+  cores = 1,
+  file = "mbta_model_v15.rds" # 6 is good (); 14 is good
 )
 ```
 
@@ -88,13 +87,61 @@ post_preds_test <- posterior_predict(
 
 # print col means
 predicted_delay <- colMeans(post_preds_test)
-predicted_delay
+head(predicted_delay)
+
 ```
+# plots
+```{r}
+# plot predictions
+pred_hist <- hist(predicted_delay,breaks = 50,col="red")
+real_hist <- hist(mbta_test$travel_time_sec,breaks = 500,col="green")
+
+
+# do a combined plot
+plot(real_hist,col=rgb(0,1,0,1/4),
+     main = "Prediction (red) vs Actual (green) Delay",
+     xlim = c(300,700),
+     ylim = c(0,0.15),
+     freq = FALSE,
+     )
+
+plot(pred_hist,col=rgb(1,0,0,1/4),freq = FALSE,
+     add=TRUE
+     )
+
+
+
+```
+
+
+
+# plot correlation:
+```{r}
+# plot points
+plot(predicted_delay, mbta_test$travel_time_sec,
+     xlim = c(0,1000),
+     ylim = c(0,1500),
+     main = "Actual vs Predicted Delay Shifted Log-Normal"
+     )
+
+# plot line of best fit
+abline(a=0,b=1,col="red")
+```
+
+
+
+
 # get acc:
 ```{r}
 
-cor(predicted_delay,mbta_test["travel_time"])
+cor(predicted_delay,mbta_test["travel_time_sec"])
 
+```
+
+```{r}
+# print min/max of delay
+min(predicted_delay)
+max(predicted_delay)
 ```
 
 
