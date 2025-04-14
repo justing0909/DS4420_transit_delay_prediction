@@ -30,14 +30,14 @@ def predict_duration(input_data):
     Returns:
         float: Predicted travel duration in seconds.
     """
-    # Initialize the MLP model
+    # initialize the MLP model
     model = MLP(seed=102)
     model.add_layer(6, LinearAF())  # Input layer
     model.add_layer(20, LinearAF())  # Hidden layer 1
     model.add_layer(10, LinearAF())  # Hidden layer 2
     model.add_layer(1, ReluAF())  # Output layer
 
-    # Convert input_data to a numpy array
+    # convert input_data to a numpy array
     scaled = df_scaler(pd.concat([df,
                                   pd.DataFrame(input_data,index=[0])],
                                   ignore_index = True
@@ -47,11 +47,9 @@ def predict_duration(input_data):
                              'relative_humidity_2m (%)', 
                              'visibility (m)',
                              'wind_speed_10m (km/h)'])
-    # print(scaled)
     x_scaled = scaled.to_numpy()[-1,:]
-    # print(x_scaled)
 
-    # Perform a forward pass to get the prediction
+    # perform a forward pass to get the prediction
     prediction = model.fw(x_scaled)
     return prediction.item()
 
