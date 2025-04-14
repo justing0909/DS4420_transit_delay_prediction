@@ -52,7 +52,7 @@ def show():
         # add a vertical dotted line for the predicted duration
         fig.add_trace(go.Scatter(
             x=[prediction, prediction],
-            y=[0, max(np.histogram(y_test, bins=100)[0]) + 5],  # Set y-range to max frequency of histogram
+            y=[0, max(np.histogram(y_test, bins=100)[0]) + 5],
             mode="lines",
             name="Predicted Duration",
             line=dict(color="red", width=3, dash="dot")
