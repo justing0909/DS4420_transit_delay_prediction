@@ -11,7 +11,7 @@ def show():
     temperature = st.number_input("Temperature (°C)", value=20.0)
     precipitation = st.number_input("Precipitation (mm)", value=0.0)
     wind_speed = st.number_input("Wind Speed (km/h)", value=10.0)
-    humidity = st.number_input("Cloud Cover (%)", value=50.0)
+    humidity = st.number_input("Humidity (%)", value=50.0)
     visibility = st.number_input("Visibility (m)", value=10000.0)
 
     # Predict button
